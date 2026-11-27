@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=980">
+<title>고고학 도판 편집기 · ArchaeoPlate Studio</title>
+<meta name="description" content="발굴조사 보고서의 도면과 유물 사진으로 축척을 맞춘 도판을 만드는 프로그램. 웹 브라우저에서 바로 쓰거나 Windows·macOS용으로 내려받을 수 있습니다. 옛 보고서 도면을 되살리는 도면 복원 AI도 연구 중입니다.">
+<meta property="og:title" content="고고학 도판 편집기 · ArchaeoPlate Studio">
+<meta property="og:description" content="보고서 도면의 축척을 맞추고, 유물 사진의 배경을 지우고, 도판으로 배치해 저장합니다.">
+<meta property="og:image" content="img/soft-profile.jpg">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --ink:#2b3a55; --txt:#7a8696; --soft:#9fadbf; --blue:#5b7fa9; --blue2:#8fa9c8; --line:#dfe6ee;
+  --font:Arial,"Helvetica Neue",Helvetica,"Apple SD Gothic Neo","Malgun Gothic","맑은 고딕",sans-serif;
+}
+html[lang="ja"]{--font:Arial,"Helvetica Neue",Helvetica,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,"Yu Gothic",sans-serif}
+*{box-sizing:border-box}
+html{background:#fff;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;min-height:100vh;color:var(--txt);font:14.5px/1.38 var(--font);letter-spacing:-.01em;word-break:keep-all;
+  background:radial-gradient(1200px 700px at 50% 30%,#fff 40%,#f4f7fb 100%)}
+html[lang="ja"] body{word-break:normal;line-break:strict}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+img{display:block;max-width:100%}
+b,strong{color:var(--ink)}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+
+.page{max-width:860px;margin:38px auto 30px;padding:0 18px;position:relative}
+/* 폴더 탭 */
+.tag{display:inline-block;position:relative;height:36px;padding:7px 46px 0 12px;color:#fff;font:21px/1 var(--font);letter-spacing:.02em;
+  background:linear-gradient(180deg,#7f9fc4,#a9bfd8);clip-path:polygon(0 0,calc(100% - 22px) 0,100% 100%,0 100%);text-shadow:0 1px 0 rgba(0,0,0,.08)}
+/* 카드 */
+.card{background:#fff;box-shadow:0 0 0 1px #eef2f7,0 18px 50px -10px rgba(91,127,169,.35),0 2px 6px rgba(91,127,169,.12)}
+.title{display:flex;align-items:center;gap:10px;height:46px;padding:0 16px;color:#33435c;font-size:20px;
+  background:linear-gradient(180deg,#eef4fb 0%,#d4e1ef 55%,#b9cde3 100%);border-bottom:2px solid #6f8fb6}
+.title .blk{color:#9aaac0;letter-spacing:-2px;font-size:17px}
+.title .hash{color:#5b6f8c;font-size:17px}
+.title .lbtn{font:15px/1 var(--font);color:#3d5579;padding:6px 13px 5px;border:1px solid #8aa3c3;border-radius:7px;cursor:pointer;
+  background:linear-gradient(#ffffff,#eef3fa 55%,#dbe6f3);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(60,90,130,.18);transition:background .15s,border-color .15s,color .15s,transform .1s}
+.title .lbtn:hover{border-color:#6f8fb6;color:#22385a;background:linear-gradient(#ffffff,#f4f9ff 55%,#e4eefa)}
+.title .lbtn:active{transform:translateY(1px)}
+.title .lbtn[aria-pressed="true"]{color:#fff;font-weight:700;border-color:#4b6f9e;cursor:default;text-shadow:0 1px 0 rgba(20,40,70,.25);
+  background:linear-gradient(#9cbde3,#6a91c4 52%,#5179b0);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 4px rgba(20,50,90,.15),0 1px 3px rgba(40,70,110,.35)}
+.title .lbtn[aria-pressed="true"]::before{content:"✓";font-size:12px;margin-right:5px;opacity:.9}
+.title .x{margin-left:auto;font-size:26px;line-height:1;color:#33435c;text-decoration:none}
+.title .x:hover{color:#e0559c;text-decoration:none}
+.nav{display:flex;align-items:center;gap:8px;padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+.nav .tabs{font-size:21px;color:#2b3a55}
+.nav .tabs button{font-size:21px;color:var(--blue2);text-decoration:underline;text-underline-offset:4px}
+.nav .tabs button[aria-selected="true"]{color:#2b3a55;text-decoration:none}
+.nav .tabs .sep{color:#c7d2df;margin:0 4px}
+.nav .icons{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:22px}
+.nav .icons a{text-decoration:none;filter:saturate(.9);transition:transform .15s}
+.nav .icons a:hover{transform:translateY(-2px)}
+.lang{display:flex;align-items:center;font-size:13px;margin-right:6px;color:#c7d2df}
+.lang button{color:var(--blue2);padding:2px 4px}
+.lang button[aria-pressed="true"]{color:#2b3a55;font-weight:700}
+
+/* 3단 */
+.cols{display:grid;grid-template-columns:1fr 1.05fr 1.1fr;gap:22px;padding:16px 16px 18px}
+.label{color:var(--soft);font-size:15px;margin:14px 0 4px}
+.name{font-size:17px;color:var(--ink);letter-spacing:-.02em}
+.name span{color:var(--soft)}
+.online{font-size:16px;color:var(--ink);margin:2px 0 6px}
+.online i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#33c46a;margin:0 6px 2px 2px;vertical-align:middle;animation:blink 2s infinite}
+@keyframes blink{50%{opacity:.3}}
+.pfp{aspect-ratio:1/1;overflow:hidden;cursor:pointer}
+.pfp img{width:100%;height:100%;object-fit:cover;transition:transform .6s,filter .6s;filter:blur(.2px)}
+.pfp:hover img{transform:scale(1.04);filter:blur(0)}
+.about{list-style:none;margin:0;padding:0;color:#3f5373;font-size:14.5px}
+.about li{margin:2px 0;white-space:nowrap}
+.about .e{display:inline-block;width:22px}
+hr{border:0;border-top:1px solid #cfd8e3;margin:12px 0}
+.small{font-size:13.5px;color:#556985;margin:0;line-height:1.5}
+.small p{margin:0}
+.small a{text-decoration:underline}
+.small i{font-style:italic}
+.socials{list-style:none;margin:0;padding:0}
+.socials li{margin:3px 0}
+.socials a{display:flex;align-items:center;gap:8px;color:#4a6185;font-size:19px;text-decoration:none}
+.socials a:hover{color:#e0559c}
+.socials .e{font-size:23px;width:30px;text-align:center}
+
+.pinned{background:linear-gradient(180deg,#fff,#eef2f7);box-shadow:0 6px 14px -6px rgba(60,80,110,.45),0 0 0 1px #e3e9f0;padding:8px 12px 12px;border-radius:2px;color:#536680;font-size:14px;line-height:1.35}
+.pinned .pp{font-size:10.5px;color:#9aa8b8;margin-bottom:2px}
+.pinned b{font-style:italic}
+.posts h4{margin:0;font-size:14px;color:#2b3a55}
+.posts h4 em{font-style:normal;color:var(--blue)}
+.posts p{margin:0;color:#8b97a6;font-size:14px}
+.posts p b{font-weight:700;color:#3c4f6c}
+.box{position:relative;margin:16px auto 4px;width:100%;cursor:pointer}
+.box .imgs{position:relative;aspect-ratio:900/560;border-radius:10px;background:#f4f7fb;overflow:hidden;transition:transform .3s}
+.box:hover .imgs{transform:scale(1.02)}
+.box img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transition:opacity .5s}
+.box img.on{opacity:1}
+.box .hint{text-align:center;font-size:11px;color:#a8b4c2;margin-top:12px}
+.box .dots{display:flex;justify-content:center;gap:5px;margin-top:6px}
+.box .dots i{width:6px;height:6px;border-radius:50%;background:#d6dee8}
+.box .dots i.on{background:var(--blue2)}
+
+.likes{color:#8792a1;font-size:14px;line-height:1.38;margin:0}
+.likes .k{font-weight:700;font-style:italic;color:#2b3a55}
+.likes .k u{text-decoration:none;color:var(--blue)}
+.likes .k s{text-decoration:none;color:#e0559c}
+.fish{margin:12px auto;width:92%;mix-blend-mode:multiply;cursor:zoom-in}
+.fish img{filter:blur(.2px)}
+.lab{margin:14px 0 0;background:linear-gradient(180deg,#fff,#eef2f7);box-shadow:0 6px 14px -6px rgba(60,80,110,.45),0 0 0 1px #e3e9f0;padding:10px 12px 12px;border-radius:2px}
+.lab .pp{font-size:10.5px;color:#9aa8b8;margin-bottom:2px}
+.lab h4{margin:0 0 4px;font-size:14px;color:#2b3a55}
+.lab h4 em{font-style:normal;color:#e0559c}
+.lab p{margin:0;color:#6f7c8d;font-size:13.5px;line-height:1.4}
+.lab .shot{margin:8px 0;border-radius:8px;overflow:hidden;cursor:zoom-in;background:#fff;box-shadow:0 0 0 1px #e3e9f0}
+.lab .shot img{width:100%}
+.lab .num{display:flex;gap:6px;margin:6px 0 8px}
+.lab .num div{flex:1;background:#fff;box-shadow:0 0 0 1px #e3e9f0;border-radius:6px;padding:5px 4px;text-align:center;font-size:11px;color:#9aa8b8;line-height:1.25}
+.lab .num b{display:block;font-size:16px;color:#2b3a55}
+.lab .num .up b{color:var(--blue)}
+.lab a{font-size:13px;text-decoration:underline}
+
+/* more */
+.more{display:none;padding:16px 18px 20px}
+.card.show-more .more{display:block}
+.card.show-more .cols{display:none}
+.more h3{color:var(--soft);font-weight:400;font-size:15px;margin:14px 0 6px}
+.more h3:first-child{margin-top:0}
+.dl{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.dl div{background:linear-gradient(180deg,#fff,#f1f5f9);box-shadow:0 5px 12px -6px rgba(60,80,110,.4),0 0 0 1px #e3e9f0;padding:10px 12px;font-size:13.5px}
+.dl div.mine{box-shadow:0 5px 12px -6px rgba(60,80,110,.4),0 0 0 2px var(--blue2)}
+.dl b{display:block;margin-bottom:2px}
+.dl ol{margin:4px 0 0;padding-left:18px}
+.dl a{font-weight:700}
+details{border-top:1px solid var(--line)}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;padding:9px 2px;color:#3f5373;font-size:14.5px;display:flex;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";color:var(--blue2);transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .body{padding:0 4px 12px 20px;font-size:13.5px;color:#6f7c8d}
+details .body p{margin:4px 0}
+details ol,details ul{margin:4px 0;padding-left:18px}
+code{font:12.5px Consolas,Menlo,monospace;background:#f1f5f9;padding:1px 5px;color:#3f5373;word-break:break-all}
+pre{background:#f1f5f9;padding:8px 10px;overflow:auto;margin:6px 0}
+pre code{padding:0}
+.env{width:100%;border-collapse:collapse;font-size:13.5px}
+.env td{padding:5px 4px;border-bottom:1px dotted #d8e0ea}
+.env td:first-child{color:var(--soft);width:38%}
+.env .no{color:#b3bdc9}
+
+.foot{text-align:center;color:#c9d2dd;font-size:13px;margin:16px 0 0}
+.foot a{color:#b5c1cf}
+
+/* 크게 보기 */
+.lb{position:fixed;inset:0;background:rgba(240,244,249,.86);backdrop-filter:blur(6px);display:none;place-items:center;z-index:20;cursor:zoom-out;padding:30px}
+.lb.on{display:grid}
+.lb img{max-width:min(1000px,94vw);max-height:86vh;box-shadow:0 20px 60px -10px rgba(40,60,90,.45);background:#fff}
+
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* 네온 커서: 평소 하늘색, 누르는 동안 분홍 */
+html,body,html *{cursor:url("img/cursor.png") 7 6,auto!important;cursor:-webkit-image-set(url("img/cursor.png") 1x,url("img/cursor@2x.png") 2x) 7 6,auto!important;cursor:image-set(url("img/cursor.png") 1x,url("img/cursor@2x.png") 2x) 7 6,auto!important}
+html.pressing,html.pressing *,html :active{cursor:url("img/cursor-press.png") 7 6,auto!important;cursor:-webkit-image-set(url("img/cursor-press.png") 1x,url("img/cursor-press@2x.png") 2x) 7 6,auto!important;cursor:image-set(url("img/cursor-press.png") 1x,url("img/cursor-press@2x.png") 2x) 7 6,auto!important}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="tag">ARCHAEOPLATE</div>
+  <div class="card" id="card">
+    <div class="title">
+      <span data-ja="考古学">고고학</span> 💾 <span class="hash">#</span> <span class="blk">▒▒▒▒</span> <button type="button" class="lbtn" data-lang="ko" aria-pressed="true">한국어</button> <span class="blk">▒▒▒▒</span> <span class="hash">#</span> <button type="button" class="lbtn" data-lang="ja" aria-pressed="false" lang="ja">日本語</button>
+      <a class="x" href="app/" data-href-ja="ja/app/" title="open">×</a>
+    </div>
+
+    <div class="nav">
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="home">home</button><span class="sep">|</span><button role="tab" aria-selected="false" data-tab="more">more</button>
+      </div>
+      <div class="icons">
+        <a href="#more" data-tab-link="more" title="help" data-ja-title="ヘルプ">💬</a>
+        <a href="https://github.com/archstudio-hs" title="archstudio-hs">😝</a>
+        <a href="https://github.com/archstudio-hs/archaeoplate-studio" title="GitHub">🔔</a>
+      </div>
+    </div>
+
+    <!-- home -->
+    <div class="cols">
+      <div>
+        <div class="name">ArchaeoPlate <span>@archstudio-hs</span></div>
+        <div class="online"><i></i>Online</div>
+        <div class="pfp" data-zoom="img/soft-profile.jpg"><img src="img/soft-profile.jpg" alt=""></div>
+        <div class="label">About</div>
+        <ul class="about">
+          <li><span class="e">🏺</span><span data-ja="考古学 | 図版">고고학 | 도판</span></li>
+          <li><span class="e">📐</span><span data-ja="縮尺 1/N にそろえる">축척 1/N 맞추기</span></li>
+          <li><span class="e">✂️</span><span data-ja="AI 背景除去">AI 배경 제거</span></li>
+          <li><span class="e">💾</span>SVG | PNG | JPEG | PDF</li>
+          <li><span class="e">🖥️</span>WEB | WIN | MAC</li>
+          <li><span class="e">🔒</span><span data-ja="ローカル処理">내 컴퓨터에서 처리</span></li>
+          <li><span class="e">🔬</span><span data-ja="図面復元AI 研究中">도면 복원 AI 연구 중</span></li>
+        </ul>
+        <hr>
+        <div class="small">
+          <p data-ja="• 非商用の研究・教育目的なら<b>無料</b>です。">• 비상업적 연구·교육 목적이면 <b>무료</b>예요.</p>
+          <p data-ja="• 使い方は<a href=&quot;manual-ja.pdf&quot;><i>操作マニュアル</i></a>を見てください。">• 사용법은 <a href="manual.pdf"><i>사용 설명서</i></a>에 있어요.</p>
+        </div>
+        <div class="label" data-ja="Download">Download</div>
+        <ul class="socials">
+          <li><a href="app/" data-href-ja="ja/app/"><span class="e">🌐</span><span data-ja="ブラウザー">웹에서 사용</span></a></li>
+          <li><a href="#" data-gh="releases/latest/download/ArchaeoPlateStudio-Windows.exe" data-gh-ja="releases/latest/download/ArchaeoPlateStudio-JA-Windows.exe"><span class="e">💾</span><span data-ja="Windows版">윈도우</span></a></li>
+          <li><a href="#" data-gh="releases/latest/download/ArchaeoPlateStudio-Mac.zip" data-gh-ja="releases/latest/download/ArchaeoPlateStudio-JA-Mac.zip"><span class="e">🍎</span><span data-ja="Mac版">맥</span></a></li>
+          <li><a href="manual.pdf" data-href-ja="manual-ja.pdf"><span class="e">📁</span><span data-ja="マニュアル">설명서</span></a></li>
+          <li><a href="#" data-gh=""><span class="e">🌀</span><span data-ja="GitHub">깃허브</span></a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="pinned">
+          <div class="pp">📍 Pinned Post</div>
+          <span data-ja="<b>インストール不要!</b> ブラウザーですぐ使える考古学の図版エディタです。報告書のPDFや遺物写真から遺物を選び、縮尺をそろえた図版として保存します。"><b>설치 없이!</b> 웹에서 바로 쓰는 고고학 도판 편집기예요. 보고서 PDF와 유물 사진에서 유물을 골라, 축척을 맞춘 도판으로 저장해요.</span>
+        </div>
+
+        <div class="label">Posts</div>
+        <div class="posts">
+          <h4>🚃 <span data-ja="作業の流れ">작업 과정</span><em>&amp;STEPS</em></h4>
+          <p data-ja="<b>元資料</b> PDF・画像を読み込み、遺物とスケールバーを指定"><b>원본 선택</b> PDF·이미지 불러오기, 유물·스케일바 지정</p>
+          <p data-ja="<b>設定</b> 用紙・余白・フォント・解像度"><b>도판 설정</b> 용지·여백·글꼴·해상도</p>
+          <p data-ja="<b>編集・保存</b> 番号・キャプション・間隔を整えて保存"><b>편집·저장</b> 번호·캡션·간격 다듬고 저장</p>
+          <p data-ja="<b>写真</b> AIで背景除去、クリックで補正"><b>사진</b> AI 배경 제거, 클릭으로 보정</p>
+        </div>
+        <hr>
+        <div class="posts">
+          <h4>🌐 <span data-ja="対応形式">지원 형식</span></h4>
+          <p data-ja="PDF、JPG、PNGを読み込み、SVG、PNG、JPEG、PDFで保存。複数の図版はZIPまたは複数ページのPDFでまとめて保存、自動保存、プロジェクトファイル。">PDF, JPG, PNG 불러오기, SVG, PNG, JPEG, PDF로 저장, 여러 도판은 ZIP이나 여러 쪽 PDF 한 파일로, 자동 저장, 프로젝트 파일.</p>
+        </div>
+
+        <div class="box" id="box" title="click">
+          <div class="imgs">
+            <img class="on" src="img/soft-step1.jpg" data-src-ja="img/soft-step1-ja.jpg" alt="">
+            <img src="img/soft-step3.jpg" data-src-ja="img/soft-step3-ja.jpg" alt="" loading="lazy">
+            <img src="img/soft-step4.jpg" data-src-ja="img/soft-step4-ja.jpg" alt="" loading="lazy">
+          </div>
+          <div class="dots"><i class="on"></i><i></i><i></i></div>
+          <div class="hint" data-ja="クリックで次の画面">클릭하면 다음 화면</div>
+        </div>
+      </div>
+
+      <div>
+        <p class="likes"><span class="k" data-ja="でき<u>る</u>こと">되<u>는</u> 것</span> <span data-ja="実測図の抽出、スケールバーの自動読み取り（OCR）および手動計測、AI背景除去および手動補正、番号とキャプション、回転・反転、SVG・PNG・JPEG・PDF出力、ZIPで一括保存、図面と写真を同じ図版に並べること。">실측도 추출, 스케일바 자동 판독(OCR) 및 수동 측정, AI 배경 제거 및 수동 보정, 번호랑 캡션, 회전·반전, SVG·PNG·JPEG·PDF 출력, ZIP 일괄 저장, 도면이랑 사진을 한 도판에 같이 놓기.</span></p>
+        <div class="fish" data-zoom="img/soft-plate.jpg"><img src="img/soft-plate.jpg" alt=""></div>
+        <p class="likes"><span class="k" data-ja="でき<s>ない</s>こと">안 <s>되는</s> 것</span> <span data-ja="スマホとタブレット、改変・再配布・商用利用（PolyForm Strict）。">모바일이랑 태블릿, 수정·재배포·상업적 이용(PolyForm Strict).</span></p>
+
+        <div class="lab">
+          <div class="pp">🔬 Lab Note</div>
+          <h4><span data-ja="図面復元AI">도면 복원 AI</span> <em data-ja="研究中">연구 중</em></h4>
+          <p data-ja="古い報告書のつぶれた実測図を、鮮明な線に戻す軽量AI。ブラウザー内で自分のパソコンだけで動きます。">옛 보고서의 뭉개진 실측도를 선명한 선으로 되살리는 가벼운 AI. 웹 브라우저에서 내 컴퓨터로만 돌아가요.</p>
+          <div class="shot" data-zoom="img/soft-restore.jpg"><img src="img/soft-restore.jpg" alt="" loading="lazy"></div>
+          <div class="num">
+            <div><b>≤2.4 MB</b><span data-ja="モデルの大きさ">모델 크기</span></div>
+            <div><b>444</b><span data-ja="整理した図面">정리한 도면</span></div>
+            <div class="up"><b>71.9→90.8</b><span data-ja="線の一致度 F1">선 일치도 F1</span></div>
+          </div>
+          <p style="font-size:12px;color:#a8b4c2" data-ja="合成図面での例。右は実際のモデル出力。">합성 도면 예시, 오른쪽은 실제 모델 출력이에요.</p>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- more -->
+    <div class="more" id="more">
+      <h3 data-ja="はじめる">시작하기</h3>
+      <div class="dl">
+        <div data-card="web"><b data-ja="🌐 Web版">🌐 웹</b>
+          <ol><li data-ja="ChromeまたはEdgeで開きます。">Chrome이나 Edge에서 열어요.</li><li data-ja="初回はページが一度再読み込みされることがあります。">처음 열 때 한 번 새로고침될 수 있어요.</li></ol>
+          <p style="margin:6px 0 0"><a href="app/" data-href-ja="ja/app/" data-ja="開く →">열기 →</a></p></div>
+        <div data-card="win"><b>💾 Windows 10 · 11</b>
+          <ol><li data-ja="<code>.exe</code>をダウンロードして実行します。"><code>.exe</code>를 내려받아 실행해요.</li><li data-ja="ChromeまたはEdgeのウィンドウで開きます。">Chrome 또는 Edge 창으로 열려요.</li></ol>
+          <p style="margin:6px 0 0"><a href="#" data-gh="releases/latest/download/ArchaeoPlateStudio-Windows.exe" data-gh-ja="releases/latest/download/ArchaeoPlateStudio-JA-Windows.exe" data-ja="ダウンロード →">다운로드 →</a></p></div>
+        <div data-card="mac"><b data-ja="🍎 macOS 11以降">🍎 macOS 11 이상</b>
+          <ol><li data-ja="<code>.zip</code>を解凍します。"><code>.zip</code>을 풀어요.</li><li data-ja="アプリを「アプリケーション」に移動して起動します。">앱을 ‘응용 프로그램’ 폴더로 옮겨 실행해요.</li></ol>
+          <p style="margin:6px 0 0"><a href="#" data-gh="releases/latest/download/ArchaeoPlateStudio-Mac.zip" data-gh-ja="releases/latest/download/ArchaeoPlateStudio-JA-Mac.zip" data-ja="ダウンロード →">다운로드 →</a></p></div>
+      </div>
+
+      <h3 data-ja="ヘルプ">도움말</h3>
+      <details><summary data-ja="セキュリティ警告が出る理由">보안 경고가 뜨는 이유</summary>
+        <div class="body"><p data-ja="Windows版・macOS版はコード署名されていないため、ダウンロード時や初回起動時に警告が出ることがあります。大学・研究機関のパソコンで実行できない場合はWeb版を使ってください。">Windows·macOS용 프로그램에는 코드 서명이 없어서, 내려받거나 처음 실행할 때 경고가 뜰 수 있어요. 학교·기관 컴퓨터에서 실행이 막히면 웹 버전을 쓰면 돼요.</p></div></details>
+      <details><summary data-ja="ブラウザーでダウンロードがブロックされるとき">브라우저에서 다운로드가 막힐 때</summary>
+        <div class="body"><ul>
+          <li data-ja="<b>Chrome</b>：右上のダウンロード一覧で警告を確認し、続行の項目があれば、公式GitHub Releasesのファイルか確認してから選びます。"><b>Chrome</b>: 오른쪽 위 다운로드 목록에서 경고를 확인하고, 계속 진행하는 항목이 있으면 공식 GitHub Releases 파일인지 확인한 뒤 골라요.</li>
+          <li data-ja="<b>Edge</b>：ダウンロード一覧で <code>···</code> を開き、<code>保持</code> があれば配布元を確認してから選びます。"><b>Edge</b>: 다운로드 목록에서 <code>···</code>을 열고, <code>유지</code>가 있으면 출처를 확인한 뒤 골라요.</li></ul></div></details>
+      <details><summary data-ja="Windowsで「WindowsによってPCが保護されました」と出るとき">Windows에서 “Windows의 PC 보호”가 뜰 때</summary>
+        <div class="body"><p data-ja="<b>詳細情報</b> → <b>実行</b> を押します。Smart App Controlや機関のポリシーで止められている場合はWeb版を使ってください。"><b>추가 정보</b> → <b>실행</b>을 눌러요. Smart App Control이나 기관 정책으로 막힌 경우엔 웹 버전을 쓰면 돼요.</p></div></details>
+      <details><summary data-ja="macOSで起動がブロックされるとき">macOS에서 실행이 막힐 때</summary>
+        <div class="body">
+          <p data-ja="<b>システム設定 → プライバシーとセキュリティ</b>で<b>「このまま開く」</b>を押します。「壊れているため開けません」と出る場合は、まず再ダウンロードし、それでも同じなら配布元を確認したうえでターミナルで次を実行します。"><b>시스템 설정 → 개인정보 보호 및 보안</b>에서 <b>그래도 열기</b>를 눌러요. “손상되어 열 수 없습니다”라고 뜨면 먼저 다시 내려받아 보고, 그래도 같으면 출처를 확인한 뒤 터미널에서 아래를 실행해요.</p>
+          <pre><code data-ja="xattr -dr com.apple.quarantine &quot;/Applications/考古学図版エディタ.app&quot;">xattr -dr com.apple.quarantine "/Applications/고고학 도판 편집기.app"</code></pre></div></details>
+      <details><summary data-ja="別のパソコンで作業を続けるには">다른 컴퓨터에서 이어서 하려면</summary>
+        <div class="body"><p data-ja="Web版とデスクトップ版は自動保存が別々です。<b>プロジェクト → プロジェクトファイルを保存</b>で保存し、移動先で<b>プロジェクトを読み込む</b>で開きます。">웹 버전과 설치형 프로그램은 자동 저장이 따로예요. <b>프로젝트 → 프로젝트 파일 저장</b>으로 저장하고, 옮겨 간 곳에서 <b>프로젝트 불러오기</b>로 열면 돼요.</p></div></details>
+
+      <h3 data-ja="研究記録">연구 기록</h3>
+      <details><summary data-ja="図面復元AI — 古い報告書の実測図の線を復元">도면 복원 AI — 옛 보고서 실측도 선 되살리기</summary>
+        <div class="body">
+          <p data-ja="研究者が整理した鮮明な実測図444枚を古いスキャンのようにわざと損傷させ、「損傷→元」の組で小さなモデルを一から学習しました。テスト図面24枚（240片）で線の一致度F1は単純拡大71.9に対し、small 90.2・base 90.8。">연구자가 정리한 선명한 실측도 444장을 옛 스캔처럼 일부러 손상시켜 ‘손상본 → 정답’ 쌍으로 작은 모델을 처음부터 학습했어요. 시험 도면 24장(240조각)에서 선 일치도 F1이 단순 확대 71.9 → small 90.2 · base 90.8.</p>
+          <p data-ja="拓本は自動判別せず、利用者が範囲を指定して元のまま残します。編集機には「図面復元」機能として今後追加する予定です。">탁본은 자동 판별하지 않고 사용자가 범위를 지정해 원본 그대로 남겨요. 편집기에는 ‘도면 복원’ 기능으로 나중에 넣을 예정이에요.</p>
+          
+        </div></details>
+
+      <h3 data-ja="推奨環境">권장 환경</h3>
+      <table class="env">
+        <tr><td data-ja="Webブラウザー">웹 브라우저</td><td data-ja="Chrome・Edge 最新版">Chrome · Edge 최신 버전</td></tr>
+        <tr><td>Windows</td><td>Windows 10 · 11</td></tr>
+        <tr><td>macOS</td><td data-ja="macOS 11以降">macOS 11 이상</td></tr>
+        <tr><td data-ja="画面サイズ">화면 크기</td><td data-ja="横幅1280px以上">가로 1280px 이상</td></tr>
+        <tr><td data-ja="スマホ・タブレット">모바일 · 태블릿</td><td class="no" data-ja="未対応">지원 안 함</td></tr>
+        <tr><td>Firefox · Safari</td><td class="no" data-ja="未検証">검증 안 함</td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="foot">( Made with ♥ · © 2026 Kim Hyun Soo (@archstudio-hs). All rights reserved. · <a data-gh="blob/main/LICENSE.md" href="#">PolyForm Strict 1.0.0</a> · <span id="ver"></span>)</p>
+</div>
+
+<div class="lb" id="lb"><img alt=""></div>
+
+<script>
+(function () {
+  var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  var repo = 'https://github.com/archstudio-hs/archaeoplate-studio';
+  var m = location.hostname.match(/^([^.]+)\.github\.io$/);
+  if (m) { var nm = location.pathname.split('/').filter(Boolean)[0]; repo = 'https://github.com/' + m[1] + '/' + (nm || (m[1] + '.github.io')); }
+  var TITLE = { ko: '고고학 도판 편집기 · ArchaeoPlate Studio', ja: '考古学図版エディタ · ArchaeoPlate Studio' };
+  var lang = 'ko';
+
+  // 커서: 누르는 동안 분홍
+  var root = document.documentElement;
+  window.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') root.classList.add('pressing'); });
+  ['pointerup', 'pointercancel', 'blur'].forEach(function (ev) { window.addEventListener(ev, function () { root.classList.remove('pressing'); }); });
+
+  // home | more
+  var card = document.getElementById('card');
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-tab]'));
+  function tab(name) {
+    card.classList.toggle('show-more', name === 'more');
+    tabs.forEach(function (t) { t.setAttribute('aria-selected', t.dataset.tab === name ? 'true' : 'false'); });
+  }
+  tabs.forEach(function (t) { t.addEventListener('click', function () { tab(t.dataset.tab); history.replaceState(null, '', t.dataset.tab === 'more' ? '#more' : location.pathname + location.search); }); });
+  document.querySelectorAll('[data-tab-link]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); tab(a.dataset.tabLink); history.replaceState(null, '', '#more'); }); });
+  if (location.hash === '#more') tab('more');
+
+  // 화면 넘기기
+  var box = document.getElementById('box'), shots = box.querySelectorAll('img'), dots = box.querySelectorAll('.dots i'), si = 0;
+  function nextShot() { si = (si + 1) % shots.length; shots.forEach(function (s, k) { s.classList.toggle('on', k === si); }); dots.forEach(function (d, k) { d.classList.toggle('on', k === si); }); }
+  box.addEventListener('click', nextShot);
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setInterval(function () { if (!box.matches(':hover')) nextShot(); }, 5000);
+
+  // 크게 보기
+  var lb = document.getElementById('lb'), lbImg = lb.querySelector('img');
+  document.querySelectorAll('[data-zoom]').forEach(function (z) { z.addEventListener('click', function () { lbImg.src = z.dataset.zoom; lb.classList.add('on'); }); });
+  lb.addEventListener('click', function () { lb.classList.remove('on'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lb.classList.remove('on'); });
+
+  // 운영체제
+  var ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent;
+  var os = /win/i.test(ua) ? 'win' : /mac/i.test(ua) ? 'mac' : '';
+  if (os) { var c = document.querySelector('[data-card="' + os + '"]'); if (c) c.classList.add('mine'); }
+
+  // 최신 버전
+  fetch('https://api.github.com/repos/' + repo.replace('https://github.com/', '') + '/releases/latest')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j && j.tag_name) document.getElementById('ver').textContent = j.tag_name + ' '; })
+    .catch(function () {});
+
+  // 언어
+  function setLang(l) {
+    lang = l; document.documentElement.lang = l; document.title = TITLE[l];
+    document.querySelectorAll('[data-ja]').forEach(function (el) {
+      if (el.dataset.ko == null) el.dataset.ko = el.innerHTML;
+      el.innerHTML = l === 'ja' ? el.dataset.ja : el.dataset.ko;
+    });
+    [['href', 'data-href'], ['src', 'data-src'], ['title', 'data-ja-title']].forEach(function (p) {
+      var sel = p[1] === 'data-ja-title' ? '[data-ja-title]' : '[' + p[1] + '-ja]';
+      document.querySelectorAll(sel).forEach(function (el) {
+        var ja = p[1] === 'data-ja-title' ? el.getAttribute('data-ja-title') : el.getAttribute(p[1] + '-ja');
+        if (el.getAttribute('data-ko-' + p[0]) == null) el.setAttribute('data-ko-' + p[0], el.getAttribute(p[0]) || '');
+        el.setAttribute(p[0], l === 'ja' ? ja : el.getAttribute('data-ko-' + p[0]));
+      });
+    });
+    document.querySelectorAll('[data-gh]').forEach(function (a) {
+      var p = (l === 'ja' && a.dataset.ghJa) ? a.dataset.ghJa : a.dataset.gh;
+      a.href = repo + (p ? '/' + p : '');
+    });
+    document.querySelectorAll('.lbtn').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.lang === l ? 'true' : 'false'); });
+    store.set('plate-lang', l);
+  }
+  document.querySelectorAll('.lbtn').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang); }); });
+  var q = new URLSearchParams(location.search).get('lang');
+  var first = q || store.get('plate-lang') || ((navigator.language || '').toLowerCase().indexOf('ja') === 0 ? 'ja' : 'ko');
+  setLang(first === 'ja' ? 'ja' : 'ko');
+})();
+</script>
+</body>
+</html>

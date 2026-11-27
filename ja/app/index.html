@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<meta name="theme-color" content="#f5f5f7">
+<title>考古学図版エディタ</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d1d1f'/%3E%3Cpath d='M11 9h10c0 5 3 7 3 11 0 3-3 4-8 4s-8-1-8-4c0-4 3-6 3-11z' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" crossorigin="anonymous">
+<link rel="stylesheet" href="styles.css?v=b96f2c690b">
+<script>
+(function(){
+  if(window.crossOriginIsolated||!window.isSecureContext||!('serviceWorker' in navigator))return;
+  navigator.serviceWorker.register('sw.js').then(function(){
+    if(navigator.serviceWorker.controller)return;
+    var key='plate.ja.coi.reloaded';
+    try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');}catch(e){return;}
+    navigator.serviceWorker.ready.then(function(){location.reload();});
+  }).catch(function(e){console.warn('Service Worker の登録に失敗しました（速度がやや低下するだけで利用には支障ありません）:',e);});
+})();
+</script>
+</head>
+<body class="awaiting-workspace">
+<section id="workspaceChooser" class="workspace-chooser" aria-label="作業種類の選択">
+  <div class="chooser-inner">
+    <h1 class="chooser-heading">考古学図版エディタ</h1>
+    <p class="chooser-lead">編集する資料の種類を選択してください</p>
+    <div class="chooser-grid">
+      <button type="button" class="chooser-option" data-choose-workspace="drawing" aria-label="図面編集を開始">
+        <span class="chooser-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10h18"/><path d="M17 10c0 3-6 7-6 15 0 8 5 13 13 13s13-5 13-13c0-8-6-12-6-15"/><path d="M24 10v28" stroke-dasharray="2.5 3"/><path d="M13.5 21h7M12.6 27h8"/></svg>
+        </span>
+        <span class="chooser-title">図面編集</span>
+        <span class="chooser-description">実測図選択 · スケール読取 · 縮尺統一 · 図版配置</span>
+      </button>
+      <button type="button" class="chooser-option" data-choose-workspace="photo" aria-label="写真編集を開始">
+        <span class="chooser-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="11" width="32" height="26" rx="4"/><circle cx="18" cy="20" r="3"/><path d="M9 33l9.500-8 6.500 5.500 5.500-4.500L39.500 33"/></svg>
+        </span>
+        <span class="chooser-title">写真編集</span>
+        <span class="chooser-description">写真選択 · 背景透過（切り抜き） · 図版配置</span>
+      </button>
+    </div>
+    <p class="chooser-foot">すべての処理はこのパソコン内で完結します。ファイルが外部へ送信されることはありません。</p>
+    <p class="chooser-copy">© 2026 Kim Hyun Soo (@archstudio-hs). All rights reserved.</p>
+  </div>
+</section>
+<div id="appWindow" class="app-window">
+  <header class="topbar">
+    <div class="brand"><button type="button" id="brandHome" class="brand-home" title="最初の画面へ戻る">考古学図版エディタ</button><span id="workflowName" aria-live="polite"></span></div>
+    <nav class="steps segmented" aria-label="作業ステップ">
+      <button class="step active" data-step="1"><b>1</b>資料選択</button>
+      <button class="step" data-step="2"><b>2</b>図版設定</button>
+      <button class="step" data-step="3"><b>3</b>最終編集</button>
+    </nav>
+    <div class="top-actions">
+      <details class="project-menu" id="projectMenu">
+        <summary class="menu-button" aria-label="プロジェクトの保存と読み込み"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 2.5h8.8l2.2 2.2v8.8a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/><path d="M5 2.5v3.5h5.5V2.5"/><path d="M4.8 13.5V9.2h6.4v4.3"/></svg><span class="project-menu-label">プロジェクト</span></summary>
+        <div class="project-tools menu">
+          <button id="saveProject" type="button" class="menu-item">プロジェクトを保存</button>
+          <label for="loadProject" class="menu-item file-btn">プロジェクトを開く…</label><input type="file" id="loadProject" accept=".plateproj,.zip" hidden>
+        </div>
+      </details>
+      <button type="button" id="clearProject" class="mini danger-solid">作業リセット</button>
+    </div>
+  </header>
+<main>
+<section id="step1" class="screen">
+  <aside class="panel leftpanel">
+    <h3>元資料</h3>
+    <label class="upload mini block" for="sourceFiles"><span>PDF · 画像を読み込む</span></label>
+    <input id="sourceFiles" type="file" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff" multiple hidden>
+    <div class="hint">複数ファイルをまとめて追加できます</div>
+    <div id="docList" class="doclist mutedbox">読み込まれた資料はありません。</div>
+    <h3 id="modeSwitchHeading">資料の種類</h3>
+    <div class="seg segmented"><button class="mode active" data-mode="drawing">図面</button><button class="mode" data-mode="photo">写真</button></div>
+    <div class="formgroup drawing-only"><label>現在の縮尺グループ</label><select id="scaleGroupSelect"></select></div><div id="pageGroupHint" class="page-group-hint drawing-only" role="status">同じページの遺物は縮尺を自動共有します。</div><button type="button" id="addScaleSet" class="mini block drawing-only">＋ 縮尺を追加</button><div id="scaleSetHint" class="hidden" aria-hidden="true"></div>
+    <h3>範囲指定</h3>
+    <div class="toollist">
+      <button class="tool active" data-tool="object"><i class="swatch greenbox"></i>遺物範囲</button>
+      <button class="tool drawing-only" data-tool="bar"><i class="swatch bluebox"></i>スケールバー</button>
+      <button class="tool" data-tool="erase"><i class="swatch redbox"></i>消去範囲</button>
+    </div>
+  </aside>
+  <section class="centerpanel">
+    <div class="toolbar">
+      <button type="button" id="toggleLeftPanel" class="mini panel-toggle" aria-pressed="false" title="左パネルを開閉">◀</button>
+      <div class="grow controls-inline">
+        <select id="docSelect" aria-label="資料"></select>
+        <select id="pageSelect" aria-label="ページ"></select>
+        <div class="pager"><button id="prevPage" class="mini" aria-label="前のページ">前へ</button><button id="nextPage" class="mini" aria-label="次のページ">次へ</button></div>
+      </div>
+      <div class="controls-inline">
+        <label class="caption" for="canvasZoom">表示</label>
+        <select id="canvasZoom"><option value="fit">全体表示</option><option value="1">100% (標準)</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option></select><button type="button" id="canvasPanZoom" class="mini pan-zoom-btn" aria-pressed="false" title="オンにするとホイールで拡大・縮小し、ドラッグで画面を移動できます"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/><path d="M7 5v4M5 7h4"/></svg><span>移動・ズーム</span></button>
+        <button type="button" id="toggleRightPanel" class="mini panel-toggle" aria-pressed="false" title="右パネルを開閉">▶</button>
+      </div>
+    </div>
+    <div class="canvaswrap" id="canvasWrap">
+      <div id="emptyCanvas" class="empty">PDFや画像を追加すると、ここで範囲を指定できます。</div>
+      <canvas id="pageCanvas" class="hidden"></canvas>
+    </div>
+    <div class="legendbar"><span class="greenbox"></span> 遺物 <span class="bluebox"></span> スケールバー <span class="redbox"></span> 消去範囲</div>
+  </section>
+  <aside class="panel rightpanel">
+    <div id="itemActions" class="item-actions-top"><button type="button" id="undoAction" class="mini action-blue" title="元に戻す Ctrl+Z">↶ 戻す</button><button type="button" id="redoAction" class="mini action-blue" title="やり直す Ctrl+Y">↷ 進む</button><button type="button" id="removeChecked" class="mini action-blue" disabled>選択遺物を削除</button></div>
+    <div class="panelhead"><h3>選択した遺物</h3><span id="itemCount">0点</span></div>
+    <div id="itemList" class="itemlist mutedbox">遺物を指定するとここに追加されます。</div>
+    <h3>選択項目の情報</h3>
+    <div id="editor" class="editor disabled">
+      <div class="formgroup"><label for="site">出土地・遺構名</label><input id="site" type="text"></div>
+      <div class="formgroup"><label for="itemNumber">表示番号</label><input id="itemNumber" type="text"></div>
+      <div class="formgroup photo-only hidden"><label for="photoWidth">写真幅(mm) <span class="label-note">空欄で自動</span></label><input id="photoWidth" type="number" step="0.5" min="3" placeholder="自動"></div>
+      <div class="photo-only hidden" id="photoMaskPanel">
+        <label class="check-inline"><input id="removeBg" type="checkbox" checked><span>写真の背景を自動透過</span></label>
+        <button id="editMask" type="button" class="mini block">オブジェクト選択で切り抜き修正…</button>
+        <div id="selInfo" class="guidehint" aria-live="polite"></div>
+      </div>
+      <div id="eraseStatus" class="guidehint" aria-live="polite">遺物番号・文字を自動確認</div>
+      <div id="aiRestoreBox" class="ai-box hidden" aria-live="polite"></div>
+    </div>
+    <section id="pageScalePanel" class="group-scale-card drawing-only hidden" aria-label="現在の縮尺グループ一括設定">
+      <h3>現在のページ・縮尺グループ設定</h3>
+      <div class="group-scale-note" id="groupScaleInfo">先に遺物を指定してください。</div>
+      <div id="scaleThumbWrap" class="scale-thumb-wrap scale-fold drawing-only hidden" title="現在のスケールバー拡大プレビュー"><canvas id="scaleThumbCanvas" class="scale-thumb-canvas" aria-label="現在のスケールバー拡大プレビュー"></canvas></div>
+      <div id="scaleAsk" class="scale-ask hidden"><p class="scale-ask-q">図面の目盛は <b id="scaleAskValue"></b> で合っていますか？</p><div class="scale-ask-btns"><button type="button" id="scaleAskYes" class="mini">合っています</button><button type="button" id="scaleAskEdit" class="mini">修正</button></div></div>
+      <div id="scaleDone" class="scale-done hidden"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.2 8.2l1.9 1.9 3.7-4"/></svg><span id="scaleDoneText"></span><button type="button" id="scaleDoneEdit" class="mini quiet">修正</button></div>
+      <div class="grid2 scale-fold drawing-only">
+        <div class="formgroup"><label for="barLength">スケールバー実長</label><input id="barLength" type="number" step="any" min="0.001"></div>
+        <div class="formgroup"><label for="barUnit">単位</label><select id="barUnit"><option value="cm">cm</option><option value="mm">mm</option><option value="m">m</option></select></div>
+      </div>
+      <div class="formgroup drawing-only"><label for="itemScale">この遺物の目標縮尺 (1/N)</label><input id="itemScale" type="number" step="any" min="1" placeholder="" required></div>
+      <div id="scaleOCRStatus" class="ocrstatus scale-fold drawing-only">横・縦のスケールバーを四角で囲むと、向き・数値・単位を自動で読み取ります。</div>
+      <details class="drawing-only disclosure" id="scaleAdvanced"><summary>読取失敗時の手動補正</summary><div class="guidehint">自動読取できない場合は下のボタンで直接計測してください。</div>
+      <div class="formgroup"><label for="pixelLength">ピクセル長</label><input id="pixelLength" class="empty-field" type="number" step="0.01" min="0.01" placeholder="未入力"></div>
+      <button id="measurePixels" class="mini block drawing-only" type="button">図面上で長さを直接計測</button><div id="measureHint" class="guidehint" aria-live="polite">バーの始点から終点までマウスで線を引いてください。横・縦ともに対応しています。</div></details>
+    </section>
+  </aside>
+</section>
+<section id="step2" class="screen hidden settingspage">
+  <div class="settingscard">
+    <div class="settings-heading"><h2>図版設定</h2><p>用紙サイズ、余白、フォントを設定します。</p></div>
+    <div class="settingsgrid">
+      <div>
+        <h3>用紙規格</h3>
+        <div class="grid2">
+          <div class="formgroup"><label for="paperPreset">規格</label><select id="paperPreset"><option value="A4">A4</option><option value="A3">A3</option><option value="B5" selected>B5</option><option value="custom">カスタム</option></select></div>
+          <div class="formgroup"><label for="orientation">向き</label><select id="orientation"><option value="portrait" selected>縦</option><option value="landscape">横</option></select></div>
+        </div>
+        <div class="grid2" id="customSizeRow">
+          <div class="formgroup"><label for="plateWidth">幅(mm)</label><input id="plateWidth" type="number" step="0.001" value="176"></div>
+          <div class="formgroup"><label for="plateHeight">高さ(mm)</label><input id="plateHeight" type="number" step="0.001" value="250"></div>
+        </div>
+        <div class="grid2">
+          <div class="formgroup"><label for="marginTB">上下余白(mm)</label><input id="marginTB" type="number" step="0.1" value="10"></div>
+          <div class="formgroup"><label for="marginLR">左右余白(mm)</label><input id="marginLR" type="number" step="0.1" value="10"></div>
+        </div>
+        <div class="formgroup"><label for="fontSelect">フォント</label><select id="fontSelect"><option value="Noto Sans JP" selected>Noto Sans JP</option><option value="Arial">Arial</option><option value="Yu Gothic">游ゴシック</option><option value="Yu Mincho">游明朝</option><option value="Hiragino Kaku Gothic ProN">ヒラギノ角ゴ ProN</option><option value="Hiragino Mincho ProN">ヒラギノ明朝 ProN</option><option value="BIZ UDPGothic">BIZ UDPゴシック</option><option value="Meiryo">メイリオ</option></select><input id="fontCustom" type="text" placeholder="フォント名を直接入力"><button type="button" id="loadLocalFonts" class="mini">PCのフォントを読み込む</button><small id="fontStatus" aria-live="polite"></small></div>
+      </div>
+      <div>
+        <h3>背景・出力</h3>
+        <div class="formgroup"><label for="background">背景</label><select id="background"><option value="white">白</option><option value="gray">薄グレー</option><option value="transparent">透明</option><option value="black">黒</option></select></div>
+        <div class="formgroup"><label for="guideStyle">余白ガイド</label><select id="guideStyle"><option value="solid">黒実線</option><option value="none" selected>なし</option></select></div>
+        <div class="formgroup"><label for="qualityDpi">出力解像度 (DPI)</label><select id="qualityDpi"><option value="150">150 · Web用</option><option value="300">300 · 標準</option><option value="450" selected>450 · 高画質</option><option value="600">600 · 高画質</option><option value="900">900 · 超高画質（大容量）</option><option value="1200">1200 · 最高画質（大容量）</option></select></div>
+        <div class="hint">解像度は保存時に適用されます。プレビューは高速表示のため300DPIで描画されます。</div>
+        <div class="grid2">
+          <div class="formgroup"><label for="exportFormat">保存形式</label><select id="exportFormat"><option value="svg" selected>SVG</option><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="pdf">PDF</option></select></div>
+          <div class="formgroup"><label for="exportMode">保存範囲</label><select id="exportMode"><option value="artboard">台紙全体を出力</option><option value="artwork">オブジェクトのみ</option></select></div>
+        </div>
+      </div>
+    </div>
+    <div class="navbuttons"><button class="mini" data-back="1">戻る</button><button class="primary" data-next="3">次へ</button></div>
+  </div>
+</section>
+<section id="step3" class="screen hidden reviewpage">
+  <aside class="panel reviewleft">
+    <h3>番号 · キャプション</h3>
+    <div class="grid2">
+      <div class="formgroup"><label for="labelSize">番号サイズ(mm)</label><input id="labelSize" type="number" step="0.1" value="3.4"></div>
+      <div class="formgroup"><label for="captionSize">キャプション(mm)</label><input id="captionSize" type="number" step="0.1" value="3.4"></div>
+    </div>
+    <div class="formgroup"><label for="numberGap">遺物と番号の間隔 (mm)</label><input id="numberGap" type="number" min="0" max="30" step="0.5" value="3"></div>
+    <div class="formgroup"><label for="caption">図版内キャプション <span class="label-note">ダブルクリックで編集</span></label><div class="caption-head-row"><select id="captionPageSelect"><option value="all">全ページ共通</option></select><div class="segmented caption-align" role="group" aria-label="キャプション揃え"><button type="button" class="cap-align" data-align="left" title="左揃え">左</button><button type="button" class="cap-align active" data-align="center" title="中央揃え">中</button><button type="button" class="cap-align" data-align="right" title="右揃え">右</button></div></div><textarea id="caption" class="caption-box" rows="2" placeholder="空欄なら出土地から自動生成"></textarea><div class="toolrow"><button type="button" id="addExtraCaption" class="mini grow">＋ キャプション追加</button><button type="button" id="removeExtraCaption" class="mini danger hidden">選択を削除</button></div><div id="extraCaptionList" class="extra-caption-list"></div></div>
+    <div class="correction-panel" id="photoToolsPanel">
+      <h3>選択写真 · 切り抜き</h3>
+      <div id="photoToolsTarget" class="guidehint">写真を選択すると切り抜きをやり直せます。</div>
+      <button type="button" id="editMaskFinal" class="mini block">オブジェクト選択で切り抜き修正…</button>
+    </div>
+    <div class="correction-panel" id="transformPanel">
+      <h3>選択遺物 · 回転 / 反転</h3>
+      <div id="transformTarget" class="guidehint">図版上で遺物を選択すると回転・反転できます。</div>
+      <div class="toolrow transform-row"><button type="button" id="rotLeft" class="mini">↶ 90°</button><button type="button" id="rotRight" class="mini">↷ 90°</button><button type="button" id="flipH" class="mini">⇄ 左右</button><button type="button" id="flipV" class="mini">⇅ 上下</button></div>
+      <div class="transform-angle-row"><label for="rotAngle">角度(°)</label><input id="rotAngle" type="number" step="1" min="-360" max="360" value="0"><button type="button" id="resetTransform" class="mini">リセット</button></div>
+    </div>
+    <div class="correction-panel" id="plateScaleBarPanel">
+      <h3>縮尺スケールバー追加</h3>
+      <div id="usedScaleQuick" class="used-scale-quick"></div>
+      <div class="grid3-scale">
+        <div class="formgroup"><label for="sbScaleDenom">縮尺 (1/N)</label><input id="sbScaleDenom" type="number" step="any" min="1" value="3"></div>
+        <div class="formgroup"><label for="sbRealLen">長さ</label><input id="sbRealLen" type="number" step="any" min="0.1" value="10"></div>
+        <div class="formgroup"><label for="sbUnit">単位</label><select id="sbUnit"><option value="cm" selected>cm</option><option value="mm">mm</option><option value="m">m</option></select></div>
+      </div>
+      <div class="toolrow"><button type="button" id="addPlateScaleBar" class="mini grow">＋ スケールバー追加</button><button type="button" id="removePlateScaleBar" class="mini danger hidden">選択を削除</button></div>
+    </div>
+    <h3>表示 · 整列</h3>
+    <div class="formgroup"><label>ガイド線</label><div class="toolrow guide-row"><button type="button" id="addGuideV" class="mini">縦線</button><button type="button" id="addGuideH" class="mini">横線</button><button type="button" id="addGuideBox" class="mini">四角枠</button><button type="button" id="clearGuides" class="mini">全削除</button></div></div>
+    <div id="guideBoxSettings" class="guide-box-controls"><label>四角枠ガイド · 外枠からの内側余白(mm)</label><div class="grid4"><div class="formgroup"><label for="guideInsetLeft">左</label><input id="guideInsetLeft" type="number" min="0" step="0.5" value="5"></div><div class="formgroup"><label for="guideInsetRight">右</label><input id="guideInsetRight" type="number" min="0" step="0.5" value="5"></div><div class="formgroup"><label for="guideInsetTop">上</label><input id="guideInsetTop" type="number" min="0" step="0.5" value="5"></div><div class="formgroup"><label for="guideInsetBottom">下</label><input id="guideInsetBottom" type="number" min="0" step="0.5" value="5"></div></div></div>
+    <div class="align-section">
+      <label>間隔の整列</label>
+      <div class="align-buttons"><button type="button" id="alignDistribute" class="mini align-btn">横間隔を均等に</button><button type="button" id="alignDistributeVertical" class="mini align-btn">縦間隔を均等に</button></div>
+    </div>
+<div id="reviewList" class="hidden" aria-hidden="true"></div>
+    <div class="navbuttons"><span class="live-hint">変更は自動反映されます</span></div>
+  </aside>
+  <section class="previewpanel">
+    <div class="toolbar"><button type="button" id="toggleReviewPanel" class="mini panel-toggle" aria-pressed="false" title="左パネルを開閉">◀</button><div class="preview-title"><span id="previewStatus">図版プレビュー</span></div><div id="selectionStatus" class="selection-status hidden"></div><button type="button" id="addArtboard" class="mini" title="新しい白紙の台紙を追加">＋ 台紙を追加</button><div class="review-history"><button type="button" id="reviewUndo" class="mini action-blue" title="元に戻す Ctrl+Z">↶ 戻す</button><button type="button" id="reviewRedo" class="mini action-blue" title="やり直す Ctrl+Y">↷ 進む</button></div><select id="previewZoom" class="toolbar-zoom" aria-label="プレビュー拡大"><option value="fit" selected>全体</option><option value="0.6">60%</option><option value="0.8">80%</option><option value="1">100%</option><option value="1.2">120%</option><option value="1.5">150%</option><option value="2">200%</option></select><button type="button" id="previewPanZoom" class="mini pan-zoom-btn" aria-pressed="false" title="オンにするとホイールで拡大・縮小し、ドラッグで画面を移動できます"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/><path d="M7 5v4M5 7h4"/></svg><span>移動・ズーム</span></button><button id="exportSvg" class="primary exportbtn" type="button">SVG保存</button></div>
+    <div class="previewwrap" id="previewViewport"><div id="previewHolder"></div></div>
+  </section>
+</section>
+</main>
+  <footer class="statusbar"><span id="footerStatus" aria-live="polite"></span><span class="copyright">© 2026 Kim Hyun Soo (@archstudio-hs). All rights reserved.</span><span id="saveStateInfo" class="status-save">自動保存待機中</span><span class="ver">v2.5.3</span></footer>
+</div>
+<div id="maskModal" class="mask-modal hidden">
+  <div class="mask-dialog sheet" role="dialog" aria-labelledby="maskTitle">
+    <div class="sheet-head"><b id="maskTitle">オブジェクト選択</b></div>
+    <div class="mask-tools">
+      <div class="segmented"><button type="button" class="selmode active" id="selKeep">＋ 残す遺物</button><button type="button" class="selmode" id="selDrop">－ 消す部分</button></div>
+      <div class="segmented" title="指定方法"><button type="button" class="selmode active" id="selToolClick">クリック</button><button type="button" class="selmode" id="selToolRegion">範囲を描く</button></div>
+      <button type="button" class="mini" id="selUndo">元に戻す</button>
+      <button type="button" class="mini" id="selReset">自動結果に戻す</button>
+      <span class="grow"></span>
+      <label class="check-inline" id="selUseAIRow"><input type="checkbox" id="selUseAI" checked><span>AI切り抜き</span></label>
+      <label class="caption" for="selZoom">拡大</label><select id="selZoom"><option value="1">全体</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select><button type="button" id="maskPanZoom" class="mini pan-zoom-btn" aria-pressed="false" title="オンにするとホイールで拡大・縮小し、ドラッグで画面を移動できます（オフ時もAlt+ホイールで拡大、中央ボタンドラッグで移動可能）"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/><path d="M7 5v4M5 7h4"/></svg><span>移動・ズーム</span></button>
+    </div>
+    <div id="maskViewport"><div id="maskLoading" class="mask-loading hidden" role="status" aria-live="polite"><i class="mask-spinner" aria-hidden="true"></i><b id="maskLoadingTitle">写真と自動切り抜きを読み込み中です…</b><span id="maskLoadingSub">高解像度の写真や初回起動時は数秒かかる場合があります。しばらくお待ちください。</span></div><canvas id="maskCanvas"></canvas></div>
+    <div class="sheet-foot mask-footer"><span id="selStatus" aria-live="polite"></span><span class="mask-actions"><button type="button" class="mini" id="closeMask">キャンセル</button><button type="button" id="saveMask" class="primary">適用</button></span></div>
+  </div>
+</div>
+<div id="busy" class="busy hidden" role="alertdialog" aria-live="assertive">
+  <div class="busy-box sheet"><div id="busyText">処理中…</div><div class="busy-bar"><i id="busyBar"></i></div><button type="button" id="busyCancel" class="mini">キャンセル</button></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>window.__PLATE__={"version":"2.5.3","vendor":{"pdf":"vendor/pdfjs-3.11.174","tess":"vendor/tesseract-5.1.1","ort":"vendor/ort-1.31.1"},"modelsBase":"models","models":{"matting":{"inputSize":1024,"mean":[0.5,0.5,0.5],"std":[1,1,1],"sigmoid":false,"title":"IS-Net general-use (자동 누끼)","license":"Apache-2.0 · xuebinqin/DIS","parts":["matting.65b82ab3ad.part00","matting.65b82ab3ad.part01","matting.65b82ab3ad.part02","matting.65b82ab3ad.part03","matting.65b82ab3ad.part04"],"bytes":90633246,"sha256":"65b82ab3ad5e417d547134faf51a326da8e8c3bd5bbecfc8786f962edc398c66"},"samEncoder":{"inputSize":[684,1024],"_입력":"inputSize 는 [세로, 가로]. 이 인코더는 1024×684 캔버스 기준으로 내보낸 것이라 다른 크기를 넣으면 마스크가 밀린다.","title":"MobileSAM 인코더 (객체 선택)","license":"Apache-2.0 · ChaoningZhang/MobileSAM","parts":["samEncoder.b97b71dac3.part00"],"bytes":16724033,"sha256":"b97b71dac3d32358b2f5e50bc364c1558e571f37115c18b3b9099b85acb68d17"},"samDecoder":{"title":"SAM 마스크 디코더 (객체 선택)","license":"Apache-2.0 · facebookresearch/segment-anything","parts":["samDecoder.6bacf3eb07.part00"],"bytes":8388985,"sha256":"6bacf3eb079daec4b763d96a0f5dc65341972ec14f5d1264a5f9df768160c905"}},"assets":{"cutoutWorker":"js/cutout-worker.js?v=9b59af635e","restoreWorker":"js/restore-worker.js?v=0df7656692","restoreModel":"ai/restore-x2-v2.onnx?v=45e85cf9d4","restoreFastModel":"ai/restore-x2-small-v2.onnx?v=8c3a8910fb"}};</script>
+<script src="vendor/pdfjs-3.11.174/pdf.min.js"></script>
+<script src="vendor/tesseract-5.1.1/tesseract.min.js"></script>
+<script src="js/ocr.js?v=ef9c914a14"></script>
+<script src="js/zip.js?v=1f55dfbdec"></script>
+<script src="js/storage.js?v=d70f781f04"></script>
+<script src="js/layout.js?v=2e9e3c663f"></script>
+<script src="js/engine.js?v=8743633e46"></script>
+<script src="js/cutout.js?v=eccef98e87"></script>
+<script src="js/restore-post.js?v=7ab6b644df"></script>
+<script src="js/airestore.js?v=5a76c2b4af"></script>
+<script src="js/app.js?v=a8624b3500"></script>
+</body>
+</html>

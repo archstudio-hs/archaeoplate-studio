@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<meta name="theme-color" content="#f5f5f7">
+<title>고고학 도판 편집기</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231d1d1f'/%3E%3Cpath d='M11 9h10c0 5 3 7 3 11 0 3-3 4-8 4s-8-1-8-4c0-4 3-6 3-11z' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css?v=1a8c8a1ff5">
+<script>
+(function(){
+  if(window.crossOriginIsolated||!window.isSecureContext||!('serviceWorker' in navigator))return;
+  navigator.serviceWorker.register('sw.js').then(function(){
+    if(navigator.serviceWorker.controller)return;
+    var key='plate.coi.reloaded';
+    try{if(sessionStorage.getItem(key))return;sessionStorage.setItem(key,'1');}catch(e){return;}
+    navigator.serviceWorker.ready.then(function(){location.reload();});
+  }).catch(function(e){console.warn('서비스 워커 등록 실패(속도만 느려질 뿐 사용에는 지장 없음):',e);});
+})();
+</script>
+</head>
+<body class="awaiting-workspace">
+<section id="workspaceChooser" class="workspace-chooser" aria-label="작업 종류 선택">
+  <div class="chooser-inner">
+    <h1 class="chooser-heading">고고학 도판 편집기</h1>
+    <p class="chooser-lead">편집할 자료의 종류를 고르세요</p>
+    <div class="chooser-grid">
+      <button type="button" class="chooser-option" data-choose-workspace="drawing" aria-label="도면 편집 시작">
+        <span class="chooser-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10h18"/><path d="M17 10c0 3-6 7-6 15 0 8 5 13 13 13s13-5 13-13c0-8-6-12-6-15"/><path d="M24 10v28" stroke-dasharray="2.5 3"/><path d="M13.5 21h7M12.6 27h8"/></svg>
+        </span>
+        <span class="chooser-title">도면 편집</span>
+        <span class="chooser-description">실측도 선택 · 스케일바 판독 · 축척 통일 · 도판 배치</span>
+      </button>
+      <button type="button" class="chooser-option" data-choose-workspace="photo" aria-label="사진 편집 시작">
+        <span class="chooser-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="11" width="32" height="26" rx="4"/><circle cx="18" cy="20" r="3"/><path d="M9 33l9.500-8 6.500 5.500 5.500-4.500L39.500 33"/></svg>
+        </span>
+        <span class="chooser-title">사진 편집</span>
+        <span class="chooser-description">사진 선택 · 배경 제거(누끼) · 도판 배치</span>
+      </button>
+    </div>
+    <p class="chooser-foot">모든 처리는 이 컴퓨터 안에서 이뤄집니다. 파일은 어디로도 전송되지 않습니다.</p>
+    <p class="chooser-copy">© 2026 Kim Hyun Soo (@archstudio-hs). All rights reserved.</p>
+  </div>
+</section>
+<div id="appWindow" class="app-window">
+  <header class="topbar">
+    <div class="brand"><button type="button" id="brandHome" class="brand-home" title="처음 화면으로 이동">고고학 도판 편집기</button><span id="workflowName" aria-live="polite"></span></div>
+    <nav class="steps segmented" aria-label="작업 단계">
+      <button class="step active" data-step="1"><b>1</b>원본 선택</button>
+      <button class="step" data-step="2"><b>2</b>도판 설정</button>
+      <button class="step" data-step="3"><b>3</b>최종 편집</button>
+    </nav>
+    <div class="top-actions">
+      <details class="project-menu" id="projectMenu">
+        <summary class="menu-button" aria-label="프로젝트 저장 및 불러오기"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 2.5h8.8l2.2 2.2v8.8a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"/><path d="M5 2.5v3.5h5.5V2.5"/><path d="M4.8 13.5V9.2h6.4v4.3"/></svg><span class="project-menu-label">프로젝트</span></summary>
+        <div class="project-tools menu">
+          <button id="saveProject" type="button" class="menu-item">프로젝트 파일 저장</button>
+          <label for="loadProject" class="menu-item file-btn">프로젝트 불러오기…</label><input type="file" id="loadProject" accept=".plateproj,.zip" hidden>
+        </div>
+      </details>
+      <button type="button" id="clearProject" class="mini danger-solid">작업 초기화</button>
+    </div>
+  </header>
+<main>
+<section id="step1" class="screen">
+  <aside class="panel leftpanel">
+    <h3>원본</h3>
+    <label class="upload mini block" for="sourceFiles"><span>PDF · 이미지 불러오기</span></label>
+    <input id="sourceFiles" type="file" accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff" multiple hidden>
+    <div class="hint">여러 파일을 한 번에 추가할 수 있어요</div>
+    <div id="docList" class="doclist mutedbox">불러온 자료가 없습니다.</div>
+    <h3 id="modeSwitchHeading">원본 유형</h3>
+    <div class="seg segmented"><button class="mode active" data-mode="drawing">도면</button><button class="mode" data-mode="photo">사진</button></div>
+    <div class="formgroup drawing-only"><label>현재 축척 그룹</label><select id="scaleGroupSelect"></select></div><div id="pageGroupHint" class="page-group-hint drawing-only" role="status">같은 페이지 유물은 자동으로 축척을 공유합니다.</div><button type="button" id="addScaleSet" class="mini block drawing-only">＋ 축척 추가</button><div id="scaleSetHint" class="hidden" aria-hidden="true"></div>
+    <h3>영역 지정</h3>
+    <div class="toollist">
+      <button class="tool active" data-tool="object"><i class="swatch greenbox"></i>유물 영역</button>
+      <button class="tool drawing-only" data-tool="bar"><i class="swatch bluebox"></i>스케일바</button>
+      <button class="tool" data-tool="erase"><i class="swatch redbox"></i>제거 영역</button>
+    </div>
+  </aside>
+  <section class="centerpanel">
+    <div class="toolbar">
+      <button type="button" id="toggleLeftPanel" class="mini panel-toggle" aria-pressed="false" title="왼쪽 패널 접기/펼치기">◀</button>
+      <div class="grow controls-inline">
+        <select id="docSelect" aria-label="자료"></select>
+        <select id="pageSelect" aria-label="쪽"></select>
+        <div class="pager"><button id="prevPage" class="mini" aria-label="이전 쪽">이전</button><button id="nextPage" class="mini" aria-label="다음 쪽">다음</button></div>
+      </div>
+      <div class="controls-inline">
+        <label class="caption" for="canvasZoom">화면</label>
+        <select id="canvasZoom"><option value="fit">전체 맞춤</option><option value="1">100% (맞춤)</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option></select><button type="button" id="canvasPanZoom" class="mini pan-zoom-btn" aria-pressed="false" title="켜면 휠로 확대·축소하고 마우스로 화면을 이동합니다"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/><path d="M7 5v4M5 7h4"/></svg><span>이동·줌</span></button>
+        <button type="button" id="toggleRightPanel" class="mini panel-toggle" aria-pressed="false" title="오른쪽 패널 접기/펼치기">▶</button>
+      </div>
+    </div>
+    <div class="canvaswrap" id="canvasWrap">
+      <div id="emptyCanvas" class="empty">PDF나 이미지 자료를 추가하면 여기서 영역을 지정할 수 있습니다.</div>
+      <canvas id="pageCanvas" class="hidden"></canvas>
+    </div>
+    <div class="legendbar"><span class="greenbox"></span> 유물 <span class="bluebox"></span> 스케일바 <span class="redbox"></span> 제거영역</div>
+  </section>
+  <aside class="panel rightpanel">
+    <div id="itemActions" class="item-actions-top"><button type="button" id="undoAction" class="mini action-blue" title="되돌리기 Ctrl+Z">↶ 뒤로</button><button type="button" id="redoAction" class="mini action-blue" title="다시 실행 Ctrl+Y">↷ 앞으로</button><button type="button" id="removeChecked" class="mini action-blue" disabled>체크한 유물 삭제</button></div>
+    <div class="panelhead"><h3>선택 유물</h3><span id="itemCount">0점</span></div>
+    <div id="itemList" class="itemlist mutedbox">유물을 지정하면 여기에 추가됩니다.</div>
+    <h3>선택 항목 정보</h3>
+    <div id="editor" class="editor disabled">
+      <div class="formgroup"><label for="site">출토지·고분명</label><input id="site" type="text"></div>
+      <div class="formgroup"><label for="itemNumber">표시 번호</label><input id="itemNumber" type="text"></div>
+      <div class="formgroup photo-only hidden"><label for="photoWidth">사진 너비(mm) <span class="label-note">비우면 자동</span></label><input id="photoWidth" type="number" step="0.5" min="3" placeholder="자동"></div>
+      <div class="photo-only hidden" id="photoMaskPanel">
+        <label class="check-inline"><input id="removeBg" type="checkbox" checked><span>사진 배경 자동 제거</span></label>
+        <button id="editMask" type="button" class="mini block">객체 선택으로 누끼 고치기…</button>
+        <div id="selInfo" class="guidehint" aria-live="polite"></div>
+      </div>
+      <div id="eraseStatus" class="guidehint" aria-live="polite">유물 번호·문자 자동 확인</div>
+      <div id="aiRestoreBox" class="ai-box hidden" aria-live="polite"></div>
+    </div>
+    <section id="pageScalePanel" class="group-scale-card drawing-only hidden" aria-label="현재 축척 그룹 일괄 설정">
+      <h3>현재 페이지 · 축척 그룹 일괄 설정</h3>
+      <div class="group-scale-note" id="groupScaleInfo">유물을 먼저 지정해 주세요.</div>
+      <div id="scaleThumbWrap" class="scale-thumb-wrap scale-fold drawing-only hidden" title="현재 스케일바 확대 미리보기"><canvas id="scaleThumbCanvas" class="scale-thumb-canvas" aria-label="현재 스케일바 확대 미리보기"></canvas></div>
+      <div id="scaleAsk" class="scale-ask hidden"><p class="scale-ask-q">도면 눈금이 <b id="scaleAskValue"></b> 맞나요?</p><div class="scale-ask-btns"><button type="button" id="scaleAskYes" class="mini">맞아요</button><button type="button" id="scaleAskEdit" class="mini">수정</button></div></div>
+      <div id="scaleDone" class="scale-done hidden"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M5.2 8.2l1.9 1.9 3.7-4"/></svg><span id="scaleDoneText"></span><button type="button" id="scaleDoneEdit" class="mini quiet">수정</button></div>
+      <div class="grid2 scale-fold drawing-only">
+        <div class="formgroup"><label for="barLength">스케일바 실제 길이</label><input id="barLength" type="number" step="any" min="0.001"></div>
+        <div class="formgroup"><label for="barUnit">단위</label><select id="barUnit"><option value="cm">cm</option><option value="mm">mm</option><option value="m">m</option></select></div>
+      </div>
+      <div class="formgroup drawing-only"><label for="itemScale">이 유물의 목표 축척 (1/N)</label><input id="itemScale" type="number" step="any" min="1" placeholder="" required></div>
+      <div id="scaleOCRStatus" class="ocrstatus scale-fold drawing-only">가로·세로 스케일바를 네모로 지정하면 방향·숫자·단위를 자동 판독합니다.</div>
+      <details class="drawing-only disclosure" id="scaleAdvanced"><summary>판독 실패 시 수동 보정</summary><div class="guidehint">자동 판독이 안 되면 아래 버튼으로 길이를 직접 재세요.</div>
+      <div class="formgroup"><label for="pixelLength">픽셀 길이</label><input id="pixelLength" class="empty-field" type="number" step="0.01" min="0.01" placeholder="비어 있음"></div>
+      <button id="measurePixels" class="mini block drawing-only" type="button">도면에서 길이 직접 재기</button><div id="measureHint" class="guidehint" aria-live="polite">막대의 시작점부터 끝점까지 마우스로 선을 그으세요. 가로·세로 모두 가능합니다.</div></details>
+    </section>
+  </aside>
+</section>
+<section id="step2" class="screen hidden settingspage">
+  <div class="settingscard">
+    <div class="settings-heading"><h2>도판 설정</h2><p>용지, 여백과 서체를 정리하세요.</p></div>
+    <div class="settingsgrid">
+      <div>
+        <h3>종이 규격</h3>
+        <div class="grid2">
+          <div class="formgroup"><label for="paperPreset">규격</label><select id="paperPreset"><option value="A4">A4</option><option value="A3">A3</option><option value="B5" selected>B5</option><option value="custom">직접입력</option></select></div>
+          <div class="formgroup"><label for="orientation">방향</label><select id="orientation"><option value="portrait" selected>세로</option><option value="landscape">가로</option></select></div>
+        </div>
+        <div class="grid2" id="customSizeRow">
+          <div class="formgroup"><label for="plateWidth">너비(mm)</label><input id="plateWidth" type="number" step="0.001" value="176"></div>
+          <div class="formgroup"><label for="plateHeight">높이(mm)</label><input id="plateHeight" type="number" step="0.001" value="250"></div>
+        </div>
+        <div class="grid2">
+          <div class="formgroup"><label for="marginTB">위/아래 여백(mm)</label><input id="marginTB" type="number" step="0.1" value="10"></div>
+          <div class="formgroup"><label for="marginLR">좌/우 여백(mm)</label><input id="marginLR" type="number" step="0.1" value="10"></div>
+        </div>
+        <div class="formgroup"><label for="fontSelect">글꼴</label><select id="fontSelect"><option value="Arial">Arial</option><option value="Malgun Gothic">맑은 고딕</option><option value="Apple SD Gothic Neo">Apple SD Gothic Neo</option><option value="Noto Sans KR">Noto Sans KR</option></select><input id="fontCustom" type="text" placeholder="글꼴명 직접 입력"><button type="button" id="loadLocalFonts" class="mini">내 컴퓨터 글꼴 불러오기</button><small id="fontStatus" aria-live="polite"></small></div>
+      </div>
+      <div>
+        <h3>배경 및 표시</h3>
+        <div class="formgroup"><label for="background">배경</label><select id="background"><option value="white">흰색</option><option value="gray">연회색</option><option value="transparent">투명</option><option value="black">검정색</option></select></div>
+        <div class="formgroup"><label for="guideStyle">여백 가이드</label><select id="guideStyle"><option value="solid">검은 실선</option><option value="none" selected>없음</option></select></div>
+        <div class="formgroup"><label for="qualityDpi">출력 해상도 (DPI)</label><select id="qualityDpi"><option value="150">150 · 웹용</option><option value="300">300 · 기본</option><option value="450" selected>450 · 고화질</option><option value="600">600 · 고화질</option><option value="900">900 · 초고화질 (고용량)</option><option value="1200">1200 · 최고화질 (고용량)</option></select></div>
+        <div class="hint">해상도는 저장할 때 적용됩니다. 미리보기는 빠르게 보이도록 300DPI로 그립니다.</div>
+        <div class="grid2">
+          <div class="formgroup"><label for="exportFormat">저장 형식</label><select id="exportFormat"><option value="svg" selected>SVG</option><option value="png">PNG</option><option value="jpeg">JPEG</option><option value="pdf">PDF</option></select></div>
+          <div class="formgroup"><label for="exportMode">저장 범위</label><select id="exportMode"><option value="artboard">대지 전체 내보내기</option><option value="artwork">오브젝트만 내보내기</option></select></div>
+        </div>
+      </div>
+    </div>
+    <div class="navbuttons"><button class="mini" data-back="1">이전</button><button class="primary" data-next="3">다음</button></div>
+  </div>
+</section>
+<section id="step3" class="screen hidden reviewpage">
+  <aside class="panel reviewleft">
+    <h3>번호 · 캡션</h3>
+    <div class="grid2">
+      <div class="formgroup"><label for="labelSize">번호 글자 크기(mm)</label><input id="labelSize" type="number" step="0.1" value="3.4"></div>
+      <div class="formgroup"><label for="captionSize">캡션 글자 크기(mm)</label><input id="captionSize" type="number" step="0.1" value="3.4"></div>
+    </div>
+    <div class="formgroup"><label for="numberGap">유물과 번호 사이 간격 (mm)</label><input id="numberGap" type="number" min="0" max="30" step="0.5" value="3"></div>
+    <div class="formgroup"><label for="caption">도판 내부 캡션 <span class="label-note">도판에서 더블클릭해 수정</span></label><div class="caption-head-row"><select id="captionPageSelect"><option value="all">전체 공통</option></select><div class="segmented caption-align" role="group" aria-label="캡션 정렬"><button type="button" class="cap-align" data-align="left" title="왼쪽 정렬">좌</button><button type="button" class="cap-align active" data-align="center" title="가운데 정렬">중</button><button type="button" class="cap-align" data-align="right" title="오른쪽 정렬">우</button></div></div><textarea id="caption" class="caption-box" rows="2" placeholder="빈칸이면 출토지로 캡션 자동 생성"></textarea><div class="toolrow"><button type="button" id="addExtraCaption" class="mini grow">＋ 캡션 추가</button><button type="button" id="removeExtraCaption" class="mini danger hidden">선택 캡션 삭제</button></div><div id="extraCaptionList" class="extra-caption-list"></div></div>
+    <div class="correction-panel" id="photoToolsPanel">
+      <h3>선택 사진 · 누끼</h3>
+      <div id="photoToolsTarget" class="guidehint">사진을 선택하면 누끼를 다시 지정할 수 있어요.</div>
+      <button type="button" id="editMaskFinal" class="mini block">객체 선택으로 누끼 고치기…</button>
+    </div>
+    <div class="correction-panel" id="transformPanel">
+      <h3>선택 유물 · 회전 / 반전</h3>
+      <div id="transformTarget" class="guidehint">도판에서 유물을 선택하면 회전·반전할 수 있어요.</div>
+      <div class="toolrow transform-row"><button type="button" id="rotLeft" class="mini">↶ 90°</button><button type="button" id="rotRight" class="mini">↷ 90°</button><button type="button" id="flipH" class="mini">⇄ 좌우</button><button type="button" id="flipV" class="mini">⇅ 상하</button></div>
+      <div class="transform-angle-row"><label for="rotAngle">각도(°)</label><input id="rotAngle" type="number" step="1" min="-360" max="360" value="0"><button type="button" id="resetTransform" class="mini">초기화</button></div>
+    </div>
+    <div class="correction-panel" id="plateScaleBarPanel">
+      <h3>축척 스케일바 추가</h3>
+      <div id="usedScaleQuick" class="used-scale-quick"></div>
+      <div class="grid3-scale">
+        <div class="formgroup"><label for="sbScaleDenom">축척 (1/N)</label><input id="sbScaleDenom" type="number" step="any" min="1" value="3"></div>
+        <div class="formgroup"><label for="sbRealLen">길이</label><input id="sbRealLen" type="number" step="any" min="0.1" value="10"></div>
+        <div class="formgroup"><label for="sbUnit">단위</label><select id="sbUnit"><option value="cm" selected>cm</option><option value="mm">mm</option><option value="m">m</option></select></div>
+      </div>
+      <div class="toolrow"><button type="button" id="addPlateScaleBar" class="mini grow">＋ 스케일바 추가</button><button type="button" id="removePlateScaleBar" class="mini danger hidden">선택 삭제</button></div>
+    </div>
+    <h3>보기 · 정렬</h3>
+    <div class="formgroup"><label>보조선</label><div class="toolrow guide-row"><button type="button" id="addGuideV" class="mini">세로선</button><button type="button" id="addGuideH" class="mini">가로선</button><button type="button" id="addGuideBox" class="mini">사각형</button><button type="button" id="clearGuides" class="mini">모두 삭제</button></div></div>
+    <div id="guideBoxSettings" class="guide-box-controls"><label>사각형 보조선 · 테두리에서 안쪽 여백(mm)</label><div class="grid4"><div class="formgroup"><label for="guideInsetLeft">좌</label><input id="guideInsetLeft" type="number" min="0" step="0.5" value="5"></div><div class="formgroup"><label for="guideInsetRight">우</label><input id="guideInsetRight" type="number" min="0" step="0.5" value="5"></div><div class="formgroup"><label for="guideInsetTop">위</label><input id="guideInsetTop" type="number" min="0" step="0.5" value="5"></div><div class="formgroup"><label for="guideInsetBottom">아래</label><input id="guideInsetBottom" type="number" min="0" step="0.5" value="5"></div></div></div>
+    <div class="align-section">
+      <label>간격 정렬</label>
+      <div class="align-buttons"><button type="button" id="alignDistribute" class="mini align-btn">가로 간격 동일하게</button><button type="button" id="alignDistributeVertical" class="mini align-btn">세로 간격 동일하게</button></div>
+    </div>
+<div id="reviewList" class="hidden" aria-hidden="true"></div>
+    <div class="navbuttons"><span class="live-hint">변경 사항 자동 반영</span></div>
+  </aside>
+  <section class="previewpanel">
+    <div class="toolbar"><button type="button" id="toggleReviewPanel" class="mini panel-toggle" aria-pressed="false" title="왼쪽 패널 접기/펼치기">◀</button><div class="preview-title"><span id="previewStatus">도판 미리보기</span></div><div id="selectionStatus" class="selection-status hidden"></div><button type="button" id="addArtboard" class="mini" title="새 빈 대지 추가">＋ 대지 추가</button><div class="review-history"><button type="button" id="reviewUndo" class="mini action-blue" title="되돌리기 Ctrl+Z">↶ 뒤로</button><button type="button" id="reviewRedo" class="mini action-blue" title="다시 실행 Ctrl+Y">↷ 앞으로</button></div><select id="previewZoom" class="toolbar-zoom" aria-label="미리보기 확대"><option value="fit" selected>맞춤</option><option value="0.6">60%</option><option value="0.8">80%</option><option value="1">100%</option><option value="1.2">120%</option><option value="1.5">150%</option><option value="2">200%</option></select><button type="button" id="previewPanZoom" class="mini pan-zoom-btn" aria-pressed="false" title="켜면 휠로 확대·축소하고 마우스로 화면을 이동합니다"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/><path d="M7 5v4M5 7h4"/></svg><span>이동·줌</span></button><button id="exportSvg" class="primary exportbtn" type="button">SVG 저장</button></div>
+    <div class="previewwrap" id="previewViewport"><div id="previewHolder"></div></div>
+  </section>
+</section>
+</main>
+  <footer class="statusbar"><span id="footerStatus" aria-live="polite"></span><span class="copyright">© 2026 Kim Hyun Soo (@archstudio-hs). All rights reserved.</span><span id="saveStateInfo" class="status-save">자동 저장 준비</span><span class="ver">v2.5.3</span></footer>
+</div>
+<div id="maskModal" class="mask-modal hidden">
+  <div class="mask-dialog sheet" role="dialog" aria-labelledby="maskTitle">
+    <div class="sheet-head"><b id="maskTitle">객체 선택</b></div>
+    <div class="mask-tools">
+      <div class="segmented"><button type="button" class="selmode active" id="selKeep">＋ 남길 유물</button><button type="button" class="selmode" id="selDrop">－ 지울 부분</button></div>
+      <div class="segmented" title="지정 방법"><button type="button" class="selmode active" id="selToolClick">클릭</button><button type="button" class="selmode" id="selToolRegion">영역 그리기</button></div>
+      <button type="button" class="mini" id="selUndo">되돌리기</button>
+      <button type="button" class="mini" id="selReset">자동 결과로</button>
+      <span class="grow"></span>
+      <label class="check-inline" id="selUseAIRow"><input type="checkbox" id="selUseAI" checked><span>AI 누끼</span></label>
+      <label class="caption" for="selZoom">확대</label><select id="selZoom"><option value="1">맞춤</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select><button type="button" id="maskPanZoom" class="mini pan-zoom-btn" aria-pressed="false" title="켜면 휠로 확대·축소하고 마우스로 화면을 이동합니다 (꺼져 있어도 Alt+휠 줌, 마우스 가운데 버튼 드래그 이동 가능)"><svg class="btn-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/><path d="M7 5v4M5 7h4"/></svg><span>이동·줌</span></button>
+    </div>
+    <div id="maskViewport"><div id="maskLoading" class="mask-loading hidden" role="status" aria-live="polite"><i class="mask-spinner" aria-hidden="true"></i><b id="maskLoadingTitle">사진과 자동 누끼를 불러오는 중입니다…</b><span id="maskLoadingSub">고화질 사진이나 첫 실행 시 몇 초 정도 걸릴 수 있습니다. 잠시만 기다려 주세요.</span></div><canvas id="maskCanvas"></canvas></div>
+    <div class="sheet-foot mask-footer"><span id="selStatus" aria-live="polite"></span><span class="mask-actions"><button type="button" class="mini" id="closeMask">취소</button><button type="button" id="saveMask" class="primary">적용</button></span></div>
+  </div>
+</div>
+<div id="busy" class="busy hidden" role="alertdialog" aria-live="assertive">
+  <div class="busy-box sheet"><div id="busyText">처리 중…</div><div class="busy-bar"><i id="busyBar"></i></div><button type="button" id="busyCancel" class="mini">취소</button></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>window.__PLATE__={"version":"2.5.3","vendor":{"pdf":"vendor/pdfjs-3.11.174","tess":"vendor/tesseract-5.1.1","ort":"vendor/ort-1.31.1"},"modelsBase":"models","models":{"matting":{"inputSize":1024,"mean":[0.5,0.5,0.5],"std":[1,1,1],"sigmoid":false,"title":"IS-Net general-use (자동 누끼)","license":"Apache-2.0 · xuebinqin/DIS","parts":["matting.65b82ab3ad.part00","matting.65b82ab3ad.part01","matting.65b82ab3ad.part02","matting.65b82ab3ad.part03","matting.65b82ab3ad.part04"],"bytes":90633246,"sha256":"65b82ab3ad5e417d547134faf51a326da8e8c3bd5bbecfc8786f962edc398c66"},"samEncoder":{"inputSize":[684,1024],"_입력":"inputSize 는 [세로, 가로]. 이 인코더는 1024×684 캔버스 기준으로 내보낸 것이라 다른 크기를 넣으면 마스크가 밀린다.","title":"MobileSAM 인코더 (객체 선택)","license":"Apache-2.0 · ChaoningZhang/MobileSAM","parts":["samEncoder.b97b71dac3.part00"],"bytes":16724033,"sha256":"b97b71dac3d32358b2f5e50bc364c1558e571f37115c18b3b9099b85acb68d17"},"samDecoder":{"title":"SAM 마스크 디코더 (객체 선택)","license":"Apache-2.0 · facebookresearch/segment-anything","parts":["samDecoder.6bacf3eb07.part00"],"bytes":8388985,"sha256":"6bacf3eb079daec4b763d96a0f5dc65341972ec14f5d1264a5f9df768160c905"}},"assets":{"cutoutWorker":"js/cutout-worker.js?v=3971c5e9d2","restoreWorker":"js/restore-worker.js?v=0df7656692","restoreModel":"ai/restore-x2-v2.onnx?v=45e85cf9d4","restoreFastModel":"ai/restore-x2-small-v2.onnx?v=8c3a8910fb"}};</script>
+<script src="vendor/pdfjs-3.11.174/pdf.min.js"></script>
+<script src="vendor/tesseract-5.1.1/tesseract.min.js"></script>
+<script src="js/ocr.js?v=7fcf157e5d"></script>
+<script src="js/zip.js?v=494788d626"></script>
+<script src="js/storage.js?v=84bf0d9826"></script>
+<script src="js/layout.js?v=3b11fb01eb"></script>
+<script src="js/engine.js?v=e93a93003c"></script>
+<script src="js/cutout.js?v=6292ac39c5"></script>
+<script src="js/restore-post.js?v=7ab6b644df"></script>
+<script src="js/airestore.js?v=85ccdcf752"></script>
+<script src="js/app.js?v=adea21812a"></script>
+</body>
+</html>
